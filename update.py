@@ -1,6 +1,7 @@
 """
 データを更新するためのスクリプト
 """
+import os
 import urllib.request
 
 from bs4 import BeautifulSoup
@@ -138,6 +139,6 @@ if __name__ == '__main__':
             date = data_nikkei['date']
 
             # 株価データをCSVファイルに保存する
-            with open(f'csv/{code}.csv', 'a', encoding="utf-8") as f:
+            with open(os.getcwd() + f'/csv/{code}.csv', 'a', encoding="utf-8") as f:
                 f.write(
                     f'{date}, {open_price}, {highest_price}, {lowest_price}, {close_price}, {volume}\n')
