@@ -29,7 +29,7 @@ def fetch_stocks_dataframe():
 
 def fetch_stocks_values(ticker):
     """
-    ティッカーシンボルの株価を取得する
+    株価のデータフレームを取得する
     """
     df = pd.DataFrame([], columns=['open', 'high', 'low', 'close', 'volume'])
 
@@ -39,11 +39,13 @@ def fetch_stocks_values(ticker):
         with urllib.request.urlopen(url) as res:
             soup = BeautifulSoup(res, 'html.parser')
 
+        # 日付を取得
         v_date = soup.find_all(
             "td", class_='py-2px font-normal text-center border border-gray-400')
         v_date_list = [v.text for v in v_date]
         date_df = pd.DataFrame({'date': v_date_list})
 
+        # 株価を取得
         values = soup.find_all(
             "td", class_='py-2px font-normal text-right border border-gray-400 pr-1')
         values_list = []
@@ -59,6 +61,7 @@ def fetch_stocks_values(ticker):
         values_df = pd.DataFrame(values_list, columns=[
                                  'open', 'high', 'low', 'close', 'volume'])
 
+        # 日付と株価を結合
         df = pd.concat([pd.concat([date_df, values_df], axis=1), df], axis=0)
 
     df = df.sort_values('date')

@@ -1,5 +1,18 @@
+init_database:
+	docker exec -it stocks python init_database.py
+build:
+	docker compose build --no-cache
 install:
-	python3 -m pip install --upgrade pip
-	python3 -m pip install -r requirements.txt
-update:
-	python3 update.py
+	docker compose build
+up:
+	docker compose up -d
+ps:
+	docker compose ps
+version:
+	docker exec -it stocks python --version
+down:
+	docker compose down
+bash:
+	docker compose exec stocks bash
+ls:
+	docker container ls
