@@ -3,9 +3,11 @@
 """
 import sqlite3
 import urllib.request
+from datetime import datetime as dt
 
 import pandas as pd
 from bs4 import BeautifulSoup
+from tqdm import tqdm
 
 
 def fetch_stocks_dataframe():
@@ -36,36 +38,54 @@ def fetch_stocks_values(ticker):
     for i in range(1, 11):
 
         url = f'https://us.kabutan.jp/stocks/{ticker}/historical_prices/daily?page={i}'
-        with urllib.request.urlopen(url) as res:
-            soup = BeautifulSoup(res, 'html.parser')
 
-        # 日付を取得
-        v_date = soup.find_all(
-            "td", class_='py-2px font-normal text-center border border-gray-400')
-        v_date_list = [v.text for v in v_date]
-        date_df = pd.DataFrame({'date': v_date_list})
+        try:
 
-        # 株価を取得
-        values = soup.find_all(
-            "td", class_='py-2px font-normal text-right border border-gray-400 pr-1')
-        values_list = []
-        for j in range(0, len(values), 7):
-            v_open = values[j].text
-            v_high = values[j + 1].text
-            v_low = values[j + 2].text
-            v_close = values[j + 3].text
-            v_volume = values[j + 6].text
-            values_list.append([
-                v_open, v_high, v_low, v_close, v_volume
-            ])
-        values_df = pd.DataFrame(values_list, columns=[
-                                 'open', 'high', 'low', 'close', 'volume'])
+            with urllib.request.urlopen(url) as res:
+                soup = BeautifulSoup(res, 'html.parser')
 
-        # 日付と株価を結合
-        df = pd.concat([pd.concat([date_df, values_df], axis=1), df], axis=0)
+            # 日付を取得
+            v_date = soup.find_all(
+                "td",
+                class_='py-2px font-normal text-center border border-gray-400'
+            )
 
-    df = df.sort_values('date')
-    df = df.groupby('date').value_counts()
+            v_date_list = [
+                dt.strftime(dt.strptime(v.text, "%y/%m/%d"), "%Y-%m-%d")
+                for v in v_date
+            ]
+            v_date_df = pd.DataFrame({'date': v_date_list})
+
+            # 株価を取得
+            v_values = soup.find_all(
+                "td",
+                class_='py-2px font-normal text-right border border-gray-400 pr-1'
+            )
+            v_values_list = []
+            for j in range(0, len(v_values), 7):
+                v_open = v_values[j].text
+                v_high = v_values[j + 1].text
+                v_low = v_values[j + 2].text
+                v_close = v_values[j + 3].text
+                v_volume = v_values[j + 6].text
+                v_values_list.append([
+                    v_open, v_high, v_low, v_close, v_volume
+                ])
+            v_values_df = pd.DataFrame(v_values_list, columns=[
+                'open', 'high', 'low', 'close', 'volume'])
+
+            # 日付と株価を結合
+            df = pd.concat(
+                [pd.concat([v_date_df, v_values_df], axis=1), df], axis=0
+            )
+
+        except urllib.error.HTTPError:
+            break
+
+        df = df.sort_values('date')
+
+    df = df.drop_duplicates()
+    df = df.reset_index(drop=True)
 
     return df
 
@@ -80,7 +100,19 @@ if __name__ == '__main__':
     with conn:
         stocks_df.to_sql('Symbols', conn, if_exists='replace', index=False)
 
-    # 株価を取得
+    # プログレスバーを定義
+    bar = tqdm(total=len(stocks_df), dynamic_ncols=True,
+               iterable=True, leave=False)
+    bar.set_description('データを取得しています')
+
     for ticker in stocks_df['ticker']:
+
+        # 株価のデータフレームを取得
         values_df = fetch_stocks_values(ticker)
-        breakpoint()
+
+        # データベースに保存
+        conn = sqlite3.connect('stocks.db')
+        with conn:
+            values_df.to_sql(ticker, conn, if_exists='replace', index=False)
+
+        bar.update(1)
