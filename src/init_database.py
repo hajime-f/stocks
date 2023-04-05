@@ -2,6 +2,7 @@
 データベースを初期化するためのスクリプト
 """
 import sqlite3
+import time
 import urllib.request
 from datetime import datetime as dt
 
@@ -80,6 +81,8 @@ def fetch_stock_values(symbol):
                 [pd.concat([v_date_df, v_values_df], axis=1), df], axis=0
             )
 
+            time.sleep(0.5)
+
         except urllib.error.HTTPError:
             break
 
@@ -117,4 +120,4 @@ if __name__ == '__main__':
             values_df.to_sql(symbol, conn, if_exists='replace', index=False)
 
         bar.update(1)
-        breakpoint()
+        time.sleep(1)

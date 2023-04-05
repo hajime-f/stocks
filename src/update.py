@@ -55,7 +55,9 @@ def obtain_num_days(symbol):
 
 
 def fetch_values_dataframe(url):
-
+    """
+    株価のページからデータフレームを取得する
+    """
     df = pd.DataFrame([], columns=['open', 'high', 'low', 'close', 'volume'])
 
     try:
@@ -133,9 +135,9 @@ def fetch_stock_values(symbol):
     return df
 
 
-def make_distinct(df_new, symbol):
+def concat_df_and_make_distinct(df_new, symbol):
     """
-    重複行を削除する
+    データベースに格納されているデータと新しく取得したデータを結合し、重複を削除する
     """
     query = f'select distinct * from {symbol} order by date desc;'
     conn = sqlite3.connect('stocks.db')
@@ -160,11 +162,9 @@ if __name__ == '__main__':
 
         # 株価のデータフレームを取得する
         values_df = fetch_stock_values(symbol)
-        values_df = make_distinct(values_df, symbol)
+        values_df = concat_df_and_make_distinct(values_df, symbol)
 
         # データベースに格納する
         conn = sqlite3.connect('stocks.db')
         with conn:
             values_df.to_sql(symbol, conn, if_exists='replace', index=False)
-
-        breakpoint()
