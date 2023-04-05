@@ -1,5 +1,7 @@
 init_database:
 	docker exec -it stocks python init_database.py
+update:
+	docker exec -it stocks python update.py
 build:
 	docker compose build --no-cache
 install:

@@ -18,18 +18,18 @@ def fetch_stocks_dataframe():
     with urllib.request.urlopen(url) as res:
         soup = BeautifulSoup(res, 'html.parser')
 
-    tk_list = [t.text for t in soup.find_all("th", class_='vaM alC')]
-    tk_list.pop(0)
+    symbol_list = [s.text for s in soup.find_all("th", class_='vaM alC')]
+    symbol_list.pop(0)
 
-    mk_list = [m.text for m in soup.find_all("td", class_='vaM alC')]
-    mk_list.pop(0)
+    market_list = [m.text for m in soup.find_all("td", class_='vaM alC')]
+    market_list.pop(0)
 
-    df = pd.DataFrame({'ticker': tk_list, 'market': mk_list})
+    df = pd.DataFrame({'symbol': symbol_list, 'market': market_list})
 
     return df
 
 
-def fetch_stocks_values(ticker):
+def fetch_stock_values(symbol):
     """
     株価のデータフレームを取得する
     """
@@ -37,7 +37,7 @@ def fetch_stocks_values(ticker):
 
     for i in range(1, 11):
 
-        url = f'https://us.kabutan.jp/stocks/{ticker}/historical_prices/daily?page={i}'
+        url = f'https://us.kabutan.jp/stocks/{symbol}/historical_prices/daily?page={i}'
 
         try:
 
@@ -49,7 +49,6 @@ def fetch_stocks_values(ticker):
                 "td",
                 class_='py-2px font-normal text-center border border-gray-400'
             )
-
             v_date_list = [
                 dt.strftime(dt.strptime(v.text, "%y/%m/%d"), "%Y-%m-%d")
                 for v in v_date
@@ -71,8 +70,10 @@ def fetch_stocks_values(ticker):
                 v_values_list.append([
                     v_open, v_high, v_low, v_close, v_volume
                 ])
-            v_values_df = pd.DataFrame(v_values_list, columns=[
-                'open', 'high', 'low', 'close', 'volume'])
+            v_values_df = pd.DataFrame(
+                v_values_list,
+                columns=['open', 'high', 'low', 'close', 'volume']
+            )
 
             # 日付と株価を結合
             df = pd.concat(
@@ -105,14 +106,15 @@ if __name__ == '__main__':
                iterable=True, leave=False)
     bar.set_description('データを取得しています')
 
-    for ticker in stocks_df['ticker']:
+    for symbol in stocks_df['symbol']:
 
         # 株価のデータフレームを取得
-        values_df = fetch_stocks_values(ticker)
+        values_df = fetch_stock_values(symbol)
 
         # データベースに保存
         conn = sqlite3.connect('stocks.db')
         with conn:
-            values_df.to_sql(ticker, conn, if_exists='replace', index=False)
+            values_df.to_sql(symbol, conn, if_exists='replace', index=False)
 
         bar.update(1)
+        breakpoint()
