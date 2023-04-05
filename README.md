@@ -3,15 +3,8 @@
 ## 動作確認済みの環境
 
 - macOS Ventura 13.2
-- Docker Desktop 4.16.2
--- Engine 20.10.22
--- Compose v2.15.1
-- パッケージ
--- Python 3.11.2
--- bs4 0.0.1
--- pandas 2.0.0
--- requests 2.28.2
--- tqdm 4.65.0
+- Docker Desktop 4.16.2（Engine 20.10.22, Compose v2.15.1）
+- パッケージ：Python 3.11.2, bs4 0.0.1, pandas 2.0.0, requests 2.28.2, tqdm 4.65.0
 
 ## 使い方
 
@@ -40,5 +33,4 @@ $ make update
 
 ## データベースについて
 
-```./src/stocks.db``` に SQLite3 のデータベースが構築・更新されます。
-ティッカーシンボルをテーブル名とする各テーブルには、日付・始値・高値・安値・終値・取引量が格納されます。
+```./src/stocks.db``` に SQLite3 のデータベースが構築・更新されます。ティッカーシンボルをテーブル名とする各テーブルには、日付・始値・高値・安値・終値・取引量が格納されます。
