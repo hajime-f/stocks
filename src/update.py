@@ -116,34 +116,39 @@ def fetch_stock_values(symbol):
     # ページネーションの数を計算する
     pagenation = math.ceil(num_days / 30)
 
+    df = pd.DataFrame(
+        [],
+        columns=['date', 'open', 'high', 'low', 'close', 'volume']
+    )
+
     for i in range(1, pagenation + 1):
 
         # 株価のページからデータフレームを取得する
         url = f'https://us.kabutan.jp/stocks/{symbol}/historical_prices/daily?page={i}'
         values_df = fetch_values_dataframe(url)
+        df = pd.concat([df, values_df], axis=0)
 
-        if num_days > 30:
-            max_j = 30
-            num_days -= 30
-        else:
-            max_j = num_days
+    df = df.drop_duplicates()
 
-        v_values_list = []
-        for j in range(0, max_j):
-            v_values_list.append([
-                values_df.iloc[j]['date'],
-                values_df.iloc[j]['open'],
-                values_df.iloc[j]['high'],
-                values_df.iloc[j]['low'],
-                values_df.iloc[j]['close'],
-                values_df.iloc[j]['volume']
-            ])
-        v_values_df = pd.DataFrame(
-            v_values_list,
-            columns=['date', 'open', 'high', 'low', 'close', 'volume']
-        )
+    return df
 
-    return v_values_df
+
+def make_distinct(df_new, symbol):
+    """
+    重複行を削除する
+    """
+    query = f'select distinct * from {symbol} order by date desc;'
+    conn = sqlite3.connect('stocks.db')
+    with conn:
+        df_old = pd.read_sql_query(query, conn)
+
+    df = pd.concat([df_old, df_new], axis=0)
+
+    df = df.sort_values('date')
+    df = df.drop_duplicates()
+    df = df.reset_index(drop=True)
+
+    return df
 
 
 if __name__ == '__main__':
@@ -155,10 +160,11 @@ if __name__ == '__main__':
 
         # 株価のデータフレームを取得する
         values_df = fetch_stock_values(symbol)
+        values_df = make_distinct(values_df, symbol)
 
         # データベースに格納する
         conn = sqlite3.connect('stocks.db')
         with conn:
-            values_df.to_sql(symbol, conn, if_exists='append', index=False)
+            values_df.to_sql(symbol, conn, if_exists='replace', index=False)
 
         breakpoint()
